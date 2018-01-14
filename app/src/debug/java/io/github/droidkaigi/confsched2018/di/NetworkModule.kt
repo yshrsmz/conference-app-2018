@@ -8,6 +8,7 @@ import io.github.droidkaigi.confsched2018.data.api.DroidKaigiApi
 import io.github.droidkaigi.confsched2018.data.api.FeedApi
 import io.github.droidkaigi.confsched2018.data.api.FeedFirestoreApi
 import io.github.droidkaigi.confsched2018.data.api.SessionFeedbackApi
+import io.github.droidkaigi.confsched2018.data.api.SponsorApi
 import io.github.droidkaigi.confsched2018.data.api.response.mapper.ApplicationJsonAdapterFactory
 import io.github.droidkaigi.confsched2018.data.api.response.mapper.LocalDateTimeAdapter
 import okhttp3.OkHttpClient
@@ -16,6 +17,7 @@ import org.threeten.bp.LocalDateTime
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.moshi.MoshiConverterFactory
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module internal object NetworkModule {
@@ -53,6 +55,20 @@ import javax.inject.Singleton
                 .build()
     }
 
+    @Singleton @Provides @Named("sponsor") @JvmStatic
+    fun provideRetrofitForSponsor(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+                .client(okHttpClient)
+                // FIXME deploy json to web or app repository
+                .baseUrl("https://gist.githubusercontent.com")
+                .addConverterFactory(MoshiConverterFactory.create(Moshi.Builder()
+                        .add(ApplicationJsonAdapterFactory.INSTANCE)
+                        .add(LocalDateTime::class.java, LocalDateTimeAdapter())
+                        .build()))
+                .addCallAdapterFactory(RxJava2CallAdapterFactory.createAsync())
+                .build()
+    }
+
     @Singleton @Provides @JvmStatic
     fun provideDroidKaigiApi(@RetrofitDroidKaigi retrofit: Retrofit): DroidKaigiApi {
         return retrofit.create(DroidKaigiApi::class.java)
@@ -64,5 +80,10 @@ import javax.inject.Singleton
     @Singleton @Provides @JvmStatic
     fun provideSessionFeedbackApi(@RetrofitGoogleForm retrofit: Retrofit): SessionFeedbackApi {
         return retrofit.create(SessionFeedbackApi::class.java)
+    }
+
+    @Singleton @Provides @JvmStatic
+    fun provideSponsorApi(@Named("sponsor") retrofit: Retrofit): SponsorApi {
+        return retrofit.create(SponsorApi::class.java)
     }
 }
